@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flashcard Quiz – Học thẻ với Bootstrap</title>
 
   <!-- Bootstrap 5 CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
 
   <style>
     body {
@@ -69,11 +67,17 @@
       padding: 5px 10px;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.1s ease;
+      transition: background 0.1s ease, border 0.1s ease;
     }
 
     .card-options li:hover {
       background: #f3f4f6;
+    }
+
+    /* đang chọn trong test (chưa chấm) */
+    .opt-selected {
+      border: 1px dashed #0d6efd;
+      background: #e0f2fe;
     }
 
     /* Test mode colors */
@@ -98,6 +102,19 @@
       font-weight: 600;
       font-size: 18px;
       display: none;
+
+      /* không bị cắt chữ */
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: visible;
+    }
+
+    #answerMessage,
+    #answerText {
+      display: block;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: visible;
     }
 
     .hint-text {
@@ -126,6 +143,7 @@
       color: #fff;
       border-color: #198754;
     }
+
     .btn-test-on {
       background-color: #dc3545;
       color: #fff;
@@ -155,72 +173,43 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container-lg">
     <h1 class="text-center mb-3">Flashcard Quiz – Học thẻ</h1>
 
     <!-- TOP BAR -->
-    <div
-      class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"
-    >
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
       <div class="d-flex align-items-center gap-2 flex-wrap">
-        <button
-          id="openModalBtn"
-          type="button"
-          class="btn btn-primary btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#dataModal"
-        >
+        <button id="openModalBtn" type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+          data-bs-target="#dataModal">
           📂 Nhập / tải dữ liệu
         </button>
-        <span
-          id="cardCountBadge"
-          class="badge badge-custom bg-secondary-subtle text-body-secondary"
-        >
+        <span id="cardCountBadge" class="badge badge-custom bg-secondary-subtle text-body-secondary">
           Chưa có thẻ nào
         </span>
       </div>
 
       <div class="d-flex flex-column align-items-end gap-1">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <button
-            id="toggleTestBtn"
-            type="button"
-            class="btn btn-sm btn-outline-danger"
-          >
+          <button id="toggleTestBtn" type="button" class="btn btn-sm btn-outline-danger">
             📝 Làm bài test: TẮT
           </button>
 
           <div class="form-check form-switch m-0">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="shuffleCheckbox"
-            />
-            <label
-              class="form-check-label small"
-              for="shuffleCheckbox"
-            >
+            <input class="form-check-input" type="checkbox" id="shuffleCheckbox" />
+            <label class="form-check-label small" for="shuffleCheckbox">
               Trộn thẻ khi test
             </label>
           </div>
 
-          <button
-            id="resetTestBtn"
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            disabled
-          >
+          <button id="resetTestBtn" type="button" class="btn btn-sm btn-outline-secondary" disabled>
             ↺ Reset test
           </button>
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <button
-            id="toggleAutoBtn"
-            type="button"
-            class="btn btn-sm btn-outline-success"
-          >
+          <button id="toggleAutoBtn" type="button" class="btn btn-sm btn-outline-success">
             👁️‍🗨️ Tự hiện đáp án: TẮT
           </button>
           <span class="status-text" id="statusText">
@@ -230,42 +219,24 @@
       </div>
     </div>
 
-    <!-- MUSIC BAR -->
+    <!-- SEARCH BAR -->
     <div class="row align-items-center g-2 mb-3">
       <div class="col-auto">
-        <label for="ytInput" class="col-form-label fw-semibold">
-          🎵 Nhạc nền (YouTube):
+        <label for="searchInput" class="col-form-label fw-semibold">
+          🔍 Tìm câu hỏi:
         </label>
       </div>
       <div class="col">
-        <input
-          id="ytInput"
-          type="text"
-          class="form-control form-control-sm"
-          placeholder="Dán link YouTube, ví dụ: https://www.youtube.com/watch?v=..."
-        />
+        <input id="searchInput" type="text" class="form-control form-control-sm"
+          placeholder="Nhập từ khóa trong câu hỏi..." />
       </div>
       <div class="col-auto d-flex gap-2">
-        <button
-          id="ytPlayBtn"
-          type="button"
-          class="btn btn-sm btn-outline-secondary"
-        >
-          ▶️ Phát
-        </button>
-        <button
-          id="ytStopBtn"
-          type="button"
-          class="btn btn-sm btn-outline-secondary"
-        >
-          ⏹ Dừng
+        <button id="searchBtn" type="button" class="btn btn-sm btn-outline-primary">
+          Tìm
         </button>
       </div>
-      <div class="col-12 small text-muted">
-        Chỉ phát tiếng, video ẩn. (Tip: bật nhạc lo-fi rồi học thẻ 😄)
-      </div>
+      <div class="col-12 small text-muted" id="searchResult"></div>
     </div>
-    <div id="ytContainer" style="width: 0; height: 0; overflow: hidden"></div>
 
     <!-- CARD SECTION -->
     <div id="cardSection" class="mb-3" style="display: none">
@@ -275,7 +246,7 @@
           <ul class="card-options" id="cardOptions"></ul>
           <div class="answer-box" id="cardAnswer">
             <span id="answerMessage">
-              <strong>Đáp án đúng:</strong>
+              <strong>Đáp án:</strong>
               <span id="answerText"></span>
             </span>
           </div>
@@ -286,41 +257,21 @@
         💡 Click vào thẻ hoặc dùng ↑ / ↓ / Space để hiện / ẩn đáp án.
       </div>
 
-      <div
-        class="d-flex align-items-center justify-content-center flex-wrap gap-2 mb-1"
-      >
-        <button
-          id="prevBtn"
-          type="button"
-          class="btn btn-sm btn-outline-secondary"
-        >
+      <div class="d-flex align-items-center justify-content-center flex-wrap gap-2 mb-1">
+        <button id="prevBtn" type="button" class="btn btn-sm btn-outline-secondary">
           ⟵ Prev
         </button>
 
         <span class="small" id="indexInfo"></span>
 
-        <button
-          id="nextBtn"
-          type="button"
-          class="btn btn-sm btn-outline-secondary"
-        >
+        <button id="nextBtn" type="button" class="btn btn-sm btn-outline-secondary">
           Next ⟶
         </button>
 
         <div class="d-flex align-items-center gap-1">
-          <input
-            type="number"
-            min="1"
-            id="jumpInput"
-            class="form-control form-control-sm"
-            style="width: 90px"
-            placeholder="Thẻ #"
-          />
-          <button
-            id="jumpBtn"
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-          >
+          <input type="number" min="1" id="jumpInput" class="form-control form-control-sm" style="width: 90px"
+            placeholder="Thẻ #" />
+          <button id="jumpBtn" type="button" class="btn btn-sm btn-outline-secondary">
             Đến
           </button>
         </div>
@@ -337,25 +288,14 @@
   </div>
 
   <!-- MODAL: INPUT / UPLOAD DATA -->
-  <div
-    class="modal fade"
-    id="dataModal"
-    tabindex="-1"
-    aria-labelledby="dataModalLabel"
-    aria-hidden="true"
-  >
+  <div class="modal fade" id="dataModal" tabindex="-1" aria-labelledby="dataModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="dataModalLabel">
             Nhập / tải dữ liệu câu hỏi
           </h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Đóng"
-          ></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -365,24 +305,15 @@
               <code>a.</code>, <code>b.</code>... và dòng cuối cùng là
               <strong>một hoặc nhiều chữ cái A/B/C/D (vd: A, AC)</strong>.
             </p>
-            <textarea
-              id="rawInput"
-              class="form-control mb-2"
-              rows="6"
-              placeholder="//Câu hỏi...
+            <textarea id="rawInput" class="form-control mb-2" rows="6" placeholder="//Câu hỏi...
 
 a. Đáp án 1
 b. Đáp án 2
 c. Đáp án 3
 d. Đáp án 4
 
-ac   (A và C cùng đúng)"
-            ></textarea>
-            <button
-              id="parseBtn"
-              type="button"
-              class="btn btn-primary btn-sm"
-            >
+ac   (A và C cùng đúng)"></textarea>
+            <button id="parseBtn" type="button" class="btn btn-primary btn-sm">
               Tạo thẻ từ nội dung
             </button>
           </div>
@@ -395,35 +326,24 @@ ac   (A và C cùng đúng)"
               JSON mới nên dùng dạng:
               <code>
                 [{"{"}"question":"...","options":[{"{"}"label":"A","text":"..."}],
-                "answers":["A","C"]{"}"}]
+                "answers":["A","D"]{"}"}]
               </code>
               <br />
               Vẫn hỗ trợ dạng cũ:
               <code> "answer":"B" </code>
+              và cả dạng:
+              <code>"correctAnswers":["A","D"]</code>
             </p>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-              <input
-                type="file"
-                id="fileInput"
-                class="form-control form-control-sm"
-                accept=".json,.txt"
-              />
-              <button
-                id="uploadBtn"
-                type="button"
-                class="btn btn-outline-secondary btn-sm"
-              >
+              <input type="file" id="fileInput" class="form-control form-control-sm" accept=".json,.txt" />
+              <button id="uploadBtn" type="button" class="btn btn-outline-secondary btn-sm">
                 Tải file lên
               </button>
             </div>
           </div>
 
           <div class="mb-2">
-            <button
-              id="clearStorageBtn"
-              type="button"
-              class="btn btn-outline-danger btn-sm"
-            >
+            <button id="clearStorageBtn" type="button" class="btn btn-outline-danger btn-sm">
               🗑 Xoá dữ liệu đã lưu
             </button>
             <span class="danger-text ms-1">
@@ -434,13 +354,27 @@ ac   (A và C cùng đúng)"
           <div id="parseError" class="parse-error"></div>
         </div>
         <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            data-bs-dismiss="modal"
-          >
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
             Đóng
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SEARCH RESULTS -->
+  <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="searchModalLabel">Kết quả tìm kiếm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body">
+          <div id="searchList" class="list-group small"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
         </div>
       </div>
     </div>
@@ -477,11 +411,6 @@ ac   (A và C cùng đúng)"
       const shuffleCheckbox = document.getElementById("shuffleCheckbox");
       const resetTestBtn = document.getElementById("resetTestBtn");
 
-      const ytInput = document.getElementById("ytInput");
-      const ytPlayBtn = document.getElementById("ytPlayBtn");
-      const ytStopBtn = document.getElementById("ytStopBtn");
-      const ytContainer = document.getElementById("ytContainer");
-
       const rawInput = document.getElementById("rawInput");
       const parseBtn = document.getElementById("parseBtn");
       const fileInput = document.getElementById("fileInput");
@@ -489,8 +418,16 @@ ac   (A và C cùng đúng)"
       const clearStorageBtn = document.getElementById("clearStorageBtn");
       const parseError = document.getElementById("parseError");
 
+      const searchInput = document.getElementById("searchInput");
+      const searchBtn = document.getElementById("searchBtn");
+      const searchResult = document.getElementById("searchResult");
+
       const dataModalEl = document.getElementById("dataModal");
       const dataModal = new bootstrap.Modal(dataModalEl);
+
+      const searchModalEl = document.getElementById("searchModal");
+      const searchList = document.getElementById("searchList");
+      const searchModal = new bootstrap.Modal(searchModalEl);
 
       // ---- STATE ----
       let cards = [];
@@ -505,6 +442,7 @@ ac   (A và C cùng đúng)"
       let totalAnswered = 0;
       let totalCorrect = 0;
       let hasAnsweredCurrent = false;
+      let currentSelectedLabels = new Set(); // lựa chọn hiện tại trong test mode
 
       const STORAGE_KEY_DATA = "flashcards_data";
       const STORAGE_KEY_INDEX = "flashcards_index";
@@ -516,25 +454,32 @@ ac   (A và C cùng đúng)"
         for (const c of arr) {
           if (!c || typeof c !== "object") continue;
           let answers = [];
-          if (Array.isArray(c.answers) && c.answers.length) {
+
+          // Ưu tiên correctAnswers (định dạng của file json mới)
+          if (Array.isArray(c.correctAnswers) && c.correctAnswers.length) {
+            answers = c.correctAnswers
+              .map((x) => String(x).toUpperCase())
+              .filter((ch) => /^[A-D]$/.test(ch));
+          } else if (Array.isArray(c.answers) && c.answers.length) {
             answers = c.answers
               .map((x) => String(x).toUpperCase())
-              .filter((ch) => /[A-D]/.test(ch));
+              .filter((ch) => /^[A-D]$/.test(ch));
           } else if (typeof c.answer === "string") {
             const ms = c.answer.toUpperCase().match(/[A-D]/g);
             if (ms) answers = Array.from(new Set(ms));
           }
+
           if (!answers.length) {
-            // nếu vẫn rỗng mà options có label thì thử auto lấy 1 label
-            if (Array.isArray(c.options)) {
+            if (Array.isArray(c.options) && c.options.length > 0) {
               const first = c.options[0];
               if (first && first.label) {
                 answers = [String(first.label).toUpperCase()];
               }
             }
           }
+
           c.answers = answers;
-          // giữ lại answer đầu cho tương thích nếu nơi khác dùng
+          c.correctAnswers = answers;
           c.answer = answers[0] || c.answer || null;
         }
         return arr;
@@ -544,6 +489,9 @@ ac   (A và C cùng đúng)"
         if (!card) return [];
         if (Array.isArray(card.answers) && card.answers.length) {
           return card.answers;
+        }
+        if (Array.isArray(card.correctAnswers) && card.correctAnswers.length) {
+          return card.correctAnswers;
         }
         if (typeof card.answer === "string") {
           const ms = card.answer.toUpperCase().match(/[A-D]/g);
@@ -580,7 +528,7 @@ ac   (A và C cùng đúng)"
           if (lines.length < 3) continue;
 
           const ansLine = lines[lines.length - 1].trim();
-          const letters = (ansLine.toUpperCase().match(/[A-D]/g) || []);
+          const letters = ansLine.toUpperCase().match(/[A-D]/g) || [];
           const uniqueLetters = Array.from(new Set(letters));
           if (!uniqueLetters.length) continue;
 
@@ -636,7 +584,7 @@ ac   (A và C cùng đúng)"
         try {
           const idx = getCurrentCardIndex();
           localStorage.setItem(STORAGE_KEY_INDEX, String(idx));
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function saveDataToStorage() {
@@ -644,7 +592,7 @@ ac   (A và C cùng đúng)"
           if (cards && cards.length > 0) {
             localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(cards));
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function saveAutoToStorage() {
@@ -653,14 +601,14 @@ ac   (A và C cùng đúng)"
             STORAGE_KEY_AUTO,
             autoShowAnswers ? "1" : "0"
           );
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function clearStorage() {
         try {
           localStorage.removeItem(STORAGE_KEY_DATA);
           localStorage.removeItem(STORAGE_KEY_INDEX);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function loadStateFromStorage() {
@@ -690,7 +638,7 @@ ac   (A và C cùng đúng)"
             emptyState.style.display = "none";
             renderCard();
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       function updateBadges() {
@@ -702,9 +650,8 @@ ac   (A và C cùng đúng)"
             extra = " | Đang ở chế độ tự hiện đáp án";
           }
           cardCountBadge.textContent = `${cards.length} thẻ`;
-          statusText.textContent = `Thẻ hiện tại: ${
-            getCurrentCardIndex() + 1
-          }/${cards.length}.${extra}`;
+          statusText.textContent = `Thẻ hiện tại: ${getCurrentCardIndex() + 1
+            }/${cards.length}.${extra}`;
         } else {
           cardCountBadge.textContent = "Chưa có thẻ nào";
           statusText.textContent =
@@ -723,7 +670,7 @@ ac   (A và C cùng đúng)"
 
         if (testMode) {
           hintText.textContent =
-            "📝 Chế độ làm bài test: chọn đáp án để kiểm tra đúng/sai. (Không dùng ↑/↓/Space để show đáp án)";
+            "📝 Chế độ làm bài test: chọn đủ đáp án đúng rồi hệ thống sẽ chấm. (Không dùng ↑/↓/Space để show đáp án)";
         } else if (autoShowAnswers) {
           hintText.textContent =
             "📖 Đang ở chế độ học lướt: đáp án tự động hiển thị. Chỉ dùng ← / → để chuyển thẻ.";
@@ -758,6 +705,7 @@ ac   (A và C cùng đúng)"
         totalCorrect = 0;
         currentPos = 0;
         hasAnsweredCurrent = false;
+        currentSelectedLabels = new Set();
       }
 
       function renderCard() {
@@ -771,6 +719,7 @@ ac   (A và C cùng đúng)"
         const cardIndex = getCurrentCardIndex();
         const c = cards[cardIndex];
         hasAnsweredCurrent = false;
+        currentSelectedLabels = new Set();
 
         cardQuestion.textContent = c.question || "Không có câu hỏi";
 
@@ -780,7 +729,7 @@ ac   (A và C cùng đúng)"
             const li = document.createElement("li");
             li.textContent = `${o.label}. ${o.text}`;
             li.dataset.label = o.label;
-            li.classList.remove("opt-correct", "opt-incorrect");
+            li.classList.remove("opt-correct", "opt-incorrect", "opt-selected");
             cardOptions.appendChild(li);
           });
         }
@@ -796,9 +745,8 @@ ac   (A và C cùng đúng)"
             "<strong>Đáp án đúng:</strong> " + (ansText || "");
         }
 
-        indexInfo.textContent = `Thẻ ${
-          cardIndex + 1
-        } / ${cards.length}`;
+        indexInfo.textContent = `Thẻ ${cardIndex + 1
+          } / ${cards.length}`;
 
         prevBtn.disabled = currentPos === 0;
         nextBtn.disabled = currentPos === cards.length - 1;
@@ -843,36 +791,13 @@ ac   (A và C cùng đúng)"
         }
       }
 
-      // ---- YOUTUBE AUDIO ----
-      function extractYouTubeId(url) {
-        if (!url) return null;
-        const patterns = [
-          /youtu\.be\/([A-Za-z0-9_-]{6,})/,
-          /youtube\.com\/watch\?v=([A-Za-z0-9_-]{6,})/,
-          /youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/,
-        ];
-        for (const re of patterns) {
-          const m = url.match(re);
-          if (m && m[1]) return m[1];
-        }
-        return null;
-      }
-
-      function playYouTubeAudio(link) {
-        const id = extractYouTubeId(link);
-        if (!id) {
-          alert("Không nhận diện được video id từ link YouTube.");
-          return;
-        }
-        const src = `https://www.youtube.com/embed/${id}?autoplay=1&controls=0`;
-        ytContainer.innerHTML =
-          '<iframe src="' +
-          src +
-          '" allow="autoplay" allowfullscreen></iframe>';
-      }
-
-      function stopYouTubeAudio() {
-        ytContainer.innerHTML = "";
+      function goToCard(idx) {
+        if (!cards.length) return;
+        if (idx < 0 || idx >= cards.length) return;
+        testMode = false;      // chuyển về chế độ học để xem nội dung
+        updateTestButton();
+        currentPos = idx;
+        renderCard();
       }
 
       // ---- EVENTS: CARDS / TEST / AUTO ----
@@ -885,6 +810,7 @@ ac   (A và C cùng đúng)"
         toggleAnswerVisibility();
       });
 
+      // TEST MODE: multi-select, chỉ chấm khi đã chọn đủ số đáp án đúng
       cardOptions.addEventListener("click", function (e) {
         const li = e.target.closest("li");
         if (!li) return;
@@ -893,24 +819,58 @@ ac   (A và C cùng đúng)"
 
         const cardIndex = getCurrentCardIndex();
         const c = cards[cardIndex];
-        const selectedLabel = li.dataset.label;
+        const label = li.dataset.label;
         const correctLabels = getAnswers(c);
+        const requiredCount = correctLabels.length || 1;
 
-        // Clear cũ
+        // toggle chọn / bỏ chọn
+        if (currentSelectedLabels.has(label)) {
+          currentSelectedLabels.delete(label);
+          li.classList.remove("opt-selected");
+        } else {
+          currentSelectedLabels.add(label);
+          li.classList.add("opt-selected");
+        }
+
+        // chưa đủ số lượng -> chưa chấm
+        if (currentSelectedLabels.size < requiredCount) {
+          return;
+        }
+
+        // bắt đầu chấm
+        hasAnsweredCurrent = true;
+        totalAnswered += 1;
+
+        const selectedArr = Array.from(currentSelectedLabels).sort();
+        const correctSorted = [...correctLabels].sort();
+        let isCorrect =
+          selectedArr.length === correctSorted.length &&
+          selectedArr.every((lbl, idx) => lbl === correctSorted[idx]);
+
+        // Clear class cũ
         [...cardOptions.querySelectorAll("li")].forEach((item) => {
-          item.classList.remove("opt-correct", "opt-incorrect");
+          item.classList.remove("opt-correct", "opt-incorrect", "opt-selected");
         });
 
-        // Đánh dấu tất cả đáp án đúng
+        // đánh dấu đáp án đúng
         [...cardOptions.querySelectorAll("li")].forEach((item) => {
           const lbl = item.dataset.label;
-          if (correctLabels.includes(lbl)) item.classList.add("opt-correct");
+          if (correctLabels.includes(lbl)) {
+            item.classList.add("opt-correct");
+          }
         });
 
-        // Nếu chọn sai thì tô đỏ
-        const isCorrect = correctLabels.includes(selectedLabel);
+        // đánh dấu lựa chọn sai
         if (!isCorrect) {
-          li.classList.add("opt-incorrect");
+          [...cardOptions.querySelectorAll("li")].forEach((item) => {
+            const lbl = item.dataset.label;
+            if (
+              currentSelectedLabels.has(lbl) &&
+              !correctLabels.includes(lbl)
+            ) {
+              item.classList.add("opt-incorrect");
+            }
+          });
         }
 
         const ansText = buildAnswerText(c);
@@ -918,16 +878,13 @@ ac   (A và C cùng đúng)"
         if (isCorrect) {
           answerMessage.innerHTML = "✅ Đúng! Đáp án: " + (ansText || "");
           perCardEverCorrect[cardIndex] = true;
+          totalCorrect += 1;
         } else {
           answerMessage.innerHTML =
             "❌ Sai. Đáp án đúng là: " + (ansText || "");
         }
 
         cardAnswer.style.display = "block";
-
-        hasAnsweredCurrent = true;
-        totalAnswered += 1;
-        if (isCorrect) totalCorrect += 1;
         updateBadges();
 
         if (perCardEverCorrect[cardIndex]) {
@@ -948,11 +905,9 @@ ac   (A và C cùng đúng)"
         if (!cards.length) return;
 
         if (!testMode) {
-          // bật test
           testMode = true;
           setupTestSession();
         } else {
-          // tắt test, quay lại view thường tại đúng card hiện tại
           const cardIndex = getCurrentCardIndex();
           testMode = false;
           currentPos = cardIndex;
@@ -984,6 +939,74 @@ ac   (A và C cùng đúng)"
           e.preventDefault();
           jumpBtn.click();
         }
+      });
+
+      // ---- SEARCH BY QUESTION (với popup danh sách) ----
+      function searchQuestion() {
+        const q = (searchInput.value || "").trim().toLowerCase();
+        searchResult.textContent = "";
+        if (!q) return;
+
+        if (!cards.length) {
+          searchResult.textContent = "Chưa có thẻ nào để tìm.";
+          return;
+        }
+
+        const matches = [];
+        cards.forEach((c, idx) => {
+          const text = (c.question || "").toLowerCase();
+          if (text.includes(q)) {
+            matches.push({ index: idx, question: c.question || "" });
+          }
+        });
+
+        if (!matches.length) {
+          searchResult.textContent = "Không tìm thấy câu hỏi nào phù hợp.";
+          return;
+        }
+
+        if (matches.length === 1) {
+          const idx = matches[0].index;
+          goToCard(idx);
+          searchResult.textContent = `Tìm thấy 1 câu, đang đến thẻ #${idx + 1}.`;
+          return;
+        }
+
+        // nhiều kết quả -> show modal
+        searchList.innerHTML = "";
+        matches.forEach((m) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "list-group-item list-group-item-action";
+          btn.dataset.index = m.index;
+          const shortText =
+            m.question.length > 200
+              ? m.question.slice(0, 200) + "..."
+              : m.question;
+          btn.textContent = `#${m.index + 1} – ${shortText}`;
+          searchList.appendChild(btn);
+        });
+
+        searchResult.textContent = `Tìm thấy ${matches.length} câu. Chọn một câu trong danh sách.`;
+        searchModal.show();
+      }
+
+      searchBtn.addEventListener("click", searchQuestion);
+      searchInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          searchQuestion();
+        }
+      });
+
+      // click item trong popup để nhảy tới thẻ đó
+      searchList.addEventListener("click", function (e) {
+        const item = e.target.closest(".list-group-item");
+        if (!item) return;
+        const idx = parseInt(item.dataset.index, 10);
+        if (Number.isNaN(idx)) return;
+        goToCard(idx);
+        searchModal.hide();
       });
 
       // ---- DATA MODAL: PARSE / UPLOAD / CLEAR ----
@@ -1078,23 +1101,8 @@ ac   (A và C cùng đúng)"
         parseError.textContent = "Đã xoá dữ liệu trong trình duyệt.";
       });
 
-      // ---- YOUTUBE BUTTONS ----
-      ytPlayBtn.addEventListener("click", function () {
-        const link = ytInput.value.trim();
-        if (!link) {
-          alert("Hãy dán link YouTube trước.");
-          return;
-        }
-        playYouTubeAudio(link);
-      });
-
-      ytStopBtn.addEventListener("click", function () {
-        stopYouTubeAudio();
-      });
-
       // ---- KEYBOARD SHORTCUTS ----
       document.addEventListener("keydown", function (e) {
-        // Không bắt phím khi modal đang mở
         if (document.querySelector(".modal.show")) return;
 
         const tag = (e.target.tagName || "").toUpperCase();
@@ -1111,7 +1119,7 @@ ac   (A và C cùng đúng)"
           e.key === "ArrowDown" ||
           e.key === " "
         ) {
-          if (autoShowAnswers || testMode) return; // chỉ khi không auto, không test
+          if (autoShowAnswers || testMode) return;
           e.preventDefault();
           toggleAnswerVisibility();
         }
@@ -1125,4 +1133,5 @@ ac   (A và C cùng đúng)"
     });
   </script>
 </body>
+
 </html>
