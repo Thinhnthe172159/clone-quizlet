@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flashcard Quiz – Học thẻ với Bootstrap</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      padding: 20px 0 40px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .badge-custom {
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .card-flash {
+      height: 380px;
+      border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+      overflow-y: auto;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .card-flash:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.16);
+    }
+
+    .card-question {
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .card-options {
+      margin: 0 0 12px 18px;
+      padding: 0;
+      font-size: 18px;
+      list-style: none;
+    }
+
+    .card-options li {
+      margin: 6px 0;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .card-options li:hover {
+      background: #f3f4f6;
+    }
+
+    /* Test mode colors */
+    .opt-correct {
+      background: #dcfce7 !important;
+      border: 1px solid #22c55e;
+      color: #14532d;
+    }
+
+    .opt-incorrect {
+      background: #fee2e2 !important;
+      border: 1px solid #ef4444;
+      color: #7f1d1d;
+    }
+
+    .answer-box {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #ecfdf3;
+      border: 1px solid #bbf7d0;
+      font-weight: 600;
+      font-size: 18px;
+      display: none;
+    }
+
+    .hint-text {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .danger-text {
+      color: #b91c1c;
+      font-size: 12px;
+    }
+
+    .parse-error {
+      color: #b91c1c;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 12px 0 32px;
+      }
+
+      .card-flash {
+        height: 320px;
+      }
+
+      .card-question {
+        font-size: 18px;
+      }
+
+      .card-options {
+        font-size: 16px;
+      }
+
+      .answer-box {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container-lg">
+    <h1 class="text-center mb-3">Flashcard Quiz – Học thẻ</h1>
+
+    <!-- TOP BAR -->
+    <div
+      class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2"
+    >
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button
+          id="openModalBtn"
+          type="button"
+          class="btn btn-primary btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#dataModal"
+        >
+          📂 Nhập / tải dữ liệu
+        </button>
+        <span
+          id="cardCountBadge"
+          class="badge badge-custom bg-secondary-subtle text-body-secondary"
+        >
+          Chưa có thẻ nào
+        </span>
+      </div>
+
+      <div class="d-flex flex-column align-items-end gap-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button
+            id="toggleTestBtn"
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+          >
+            📝 Làm bài test: TẮT
+          </button>
+
+          <div class="form-check form-switch m-0">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="shuffleCheckbox"
+            />
+            <label
+              class="form-check-label small"
+              for="shuffleCheckbox"
+            >
+              Trộn thẻ khi test
+            </label>
+          </div>
+
+          <button
+            id="resetTestBtn"
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            disabled
+          >
+            ↺ Reset test
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button
+            id="toggleAutoBtn"
+            type="button"
+            class="btn btn-sm btn-outline-success"
+          >
+            👁️‍🗨️ Tự hiện đáp án: TẮT
+          </button>
+          <span class="status-text" id="statusText">
+            Chưa tải dữ liệu. Nhấn “Nhập / tải dữ liệu” để bắt đầu.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MUSIC BAR -->
+    <div class="row align-items-center g-2 mb-3">
+      <div class="col-auto">
+        <label for="ytInput" class="col-form-label fw-semibold">
+          🎵 Nhạc nền (YouTube):
+        </label>
+      </div>
+      <div class="col">
+        <input
+          id="ytInput"
+          type="text"
+          class="form-control form-control-sm"
+          placeholder="Dán link YouTube, ví dụ: https://www.youtube.com/watch?v=..."
+        />
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button
+          id="ytPlayBtn"
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+        >
+          ▶️ Phát
+        </button>
+        <button
+          id="ytStopBtn"
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+        >
+          ⏹ Dừng
+        </button>
+      </div>
+      <div class="col-12 small text-muted">
+        Chỉ phát tiếng, video ẩn. (Tip: bật nhạc lo-fi rồi học thẻ 😄)
+      </div>
+    </div>
+    <div id="ytContainer" style="width: 0; height: 0; overflow: hidden"></div>
+
+    <!-- CARD SECTION -->
+    <div id="cardSection" class="mb-3" style="display: none">
+      <div class="card card-flash mb-2" id="card">
+        <div class="card-body">
+          <div class="card-question" id="cardQuestion"></div>
+          <ul class="card-options" id="cardOptions"></ul>
+          <div class="answer-box" id="cardAnswer">
+            <span id="answerMessage">
+              <strong>Đáp án đúng:</strong>
+              <span id="answerText"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center hint-text mb-2" id="hintText">
+        💡 Click vào thẻ hoặc dùng ↑ / ↓ / Space để hiện / ẩn đáp án.
+      </div>
+
+      <div
+        class="d-flex align-items-center justify-content-center flex-wrap gap-2 mb-1"
+      >
+        <button
+          id="prevBtn"
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+        >
+          ⟵ Prev
+        </button>
+
+        <span class="small" id="indexInfo"></span>
+
+        <button
+          id="nextBtn"
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+        >
+          Next ⟶
+        </button>
+
+        <div class="d-flex align-items-center gap-1">
+          <input
+            type="number"
+            min="1"
+            id="jumpInput"
+            class="form-control form-control-sm"
+            style="width: 90px"
+            placeholder="Thẻ #"
+          />
+          <button
+            id="jumpBtn"
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+          >
+            Đến
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center small text-success" id="perCardStatus"></div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="text-center text-muted mt-4">
+      Chưa có dữ liệu nào. Hãy nhấn
+      <strong>“Nhập / tải dữ liệu”</strong> để thêm bộ câu hỏi.
+    </div>
+  </div>
+
+  <!-- MODAL: INPUT / UPLOAD DATA -->
+  <div
+    class="modal fade"
+    id="dataModal"
+    tabindex="-1"
+    aria-labelledby="dataModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dataModalLabel">
+            Nhập / tải dữ liệu câu hỏi
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Đóng"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <h6>1️⃣ Nhập dữ liệu thủ công</h6>
+            <p class="small-note mb-2">
+              Dán nội dung từ Word/TXT, format: câu hỏi + các dòng
+              <code>a.</code>, <code>b.</code>... và dòng cuối cùng là chữ cái
+              đáp án (A/B/C/D).
+            </p>
+            <textarea
+              id="rawInput"
+              class="form-control mb-2"
+              rows="6"
+              placeholder="//Câu hỏi...
+
+a. Đáp án 1
+b. Đáp án 2
+c. Đáp án 3
+d. Đáp án 4
+
+b"
+            ></textarea>
+            <button
+              id="parseBtn"
+              type="button"
+              class="btn btn-primary btn-sm"
+            >
+              Tạo thẻ từ nội dung
+            </button>
+          </div>
+
+          <hr />
+
+          <div class="mb-3">
+            <h6>2️⃣ Hoặc upload file (.json hoặc .txt)</h6>
+            <p class="small-note mb-2">
+              JSON phải có dạng:
+              <code
+                >[{"{"}"question": "...","options":[{"{"}"label":"A","text":"..."
+                {"}"}], "answer":"B"{"}"}]</code
+              >
+            </p>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <input
+                type="file"
+                id="fileInput"
+                class="form-control form-control-sm"
+                accept=".json,.txt"
+              />
+              <button
+                id="uploadBtn"
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+              >
+                Tải file lên
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <button
+              id="clearStorageBtn"
+              type="button"
+              class="btn btn-outline-danger btn-sm"
+            >
+              🗑 Xoá dữ liệu đã lưu
+            </button>
+            <span class="danger-text ms-1">
+              Sẽ xoá bộ thẻ và tiến độ đang lưu trong trình duyệt.
+            </span>
+          </div>
+
+          <div id="parseError" class="parse-error"></div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            data-bs-dismiss="modal"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // ---- DOM ELEMENTS ----
+      const cardSection = document.getElementById("cardSection");
+      const emptyState = document.getElementById("emptyState");
+
+      const card = document.getElementById("card");
+      const cardQuestion = document.getElementById("cardQuestion");
+      const cardOptions = document.getElementById("cardOptions");
+      const cardAnswer = document.getElementById("cardAnswer");
+      const answerText = document.getElementById("answerText");
+      const answerMessage = document.getElementById("answerMessage");
+      const hintText = document.getElementById("hintText");
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const indexInfo = document.getElementById("indexInfo");
+      const perCardStatus = document.getElementById("perCardStatus");
+      const jumpInput = document.getElementById("jumpInput");
+      const jumpBtn = document.getElementById("jumpBtn");
+
+      const cardCountBadge = document.getElementById("cardCountBadge");
+      const statusText = document.getElementById("statusText");
+      const toggleAutoBtn = document.getElementById("toggleAutoBtn");
+      const toggleTestBtn = document.getElementById("toggleTestBtn");
+      const shuffleCheckbox = document.getElementById("shuffleCheckbox");
+      const resetTestBtn = document.getElementById("resetTestBtn");
+
+      const ytInput = document.getElementById("ytInput");
+      const ytPlayBtn = document.getElementById("ytPlayBtn");
+      const ytStopBtn = document.getElementById("ytStopBtn");
+      const ytContainer = document.getElementById("ytContainer");
+
+      const rawInput = document.getElementById("rawInput");
+      const parseBtn = document.getElementById("parseBtn");
+      const fileInput = document.getElementById("fileInput");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const clearStorageBtn = document.getElementById("clearStorageBtn");
+      const parseError = document.getElementById("parseError");
+
+      const dataModalEl = document.getElementById("dataModal");
+      const dataModal = new bootstrap.Modal(dataModalEl);
+
+      // ---- STATE ----
+      let cards = [];
+      let currentPos = 0; // vị trí logic hiện tại (0..n-1)
+      let autoShowAnswers = false;
+      let testMode = false;
+      let useShuffle = false;
+
+      let testOrder = []; // mảng index card khi test
+      let perCardEverCorrect = []; // đánh dấu câu nào từng đúng
+
+      let totalAnswered = 0;
+      let totalCorrect = 0;
+      let hasAnsweredCurrent = false;
+
+      const STORAGE_KEY_DATA = "flashcards_data";
+      const STORAGE_KEY_INDEX = "flashcards_index";
+      const STORAGE_KEY_AUTO = "flashcards_auto_show";
+
+      // ---- HELPERS ----
+      function parseFromText(text) {
+        const blocks = text.trim().split(/\n\s*\n+/);
+        const result = [];
+
+        for (const block of blocks) {
+          const lines = block
+            .split("\n")
+            .map((l) => l.trim())
+            .filter(Boolean);
+          if (lines.length < 3) continue;
+
+          const ansLine = lines[lines.length - 1].trim();
+          const ansMatch = ansLine.match(/^([A-Da-d])$/);
+          if (!ansMatch) continue;
+          const answerLetter = ansMatch[1].toUpperCase();
+
+          let optStart = null;
+          for (let i = 0; i < lines.length; i++) {
+            if (/^[A-Da-d][\.\)]\s+/.test(lines[i])) {
+              optStart = i;
+              break;
+            }
+          }
+          if (optStart === null) continue;
+
+          const questionLines = lines.slice(0, optStart);
+          const question = questionLines.join(" ").replace(/^\/\//, "").trim();
+
+          const optionLines = lines.slice(optStart, lines.length - 1);
+          const options = [];
+          for (const line of optionLines) {
+            const m = line.match(/^([A-Da-d])[\.\)]\s*(.+)$/);
+            if (!m) continue;
+            options.push({ label: m[1].toUpperCase(), text: m[2].trim() });
+          }
+          if (!options.length) continue;
+
+          result.push({ question, options, answer: answerLetter });
+        }
+        return result;
+      }
+
+      function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+
+      function getCurrentCardIndex() {
+        if (!cards.length) return 0;
+        if (testMode) {
+          if (!testOrder.length) {
+            testOrder = Array.from({ length: cards.length }, (_, i) => i);
+          }
+          return testOrder[currentPos] ?? 0;
+        }
+        return currentPos;
+      }
+
+      function saveIndexToStorage() {
+        try {
+          const idx = getCurrentCardIndex();
+          localStorage.setItem(STORAGE_KEY_INDEX, String(idx));
+        } catch (e) {}
+      }
+
+      function saveDataToStorage() {
+        try {
+          if (cards && cards.length > 0) {
+            localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(cards));
+          }
+        } catch (e) {}
+      }
+
+      function saveAutoToStorage() {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY_AUTO,
+            autoShowAnswers ? "1" : "0"
+          );
+        } catch (e) {}
+      }
+
+      function clearStorage() {
+        try {
+          localStorage.removeItem(STORAGE_KEY_DATA);
+          localStorage.removeItem(STORAGE_KEY_INDEX);
+        } catch (e) {}
+      }
+
+      function loadStateFromStorage() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_DATA);
+          if (raw) {
+            const storedCards = JSON.parse(raw);
+            if (Array.isArray(storedCards) && storedCards.length) {
+              cards = storedCards;
+              perCardEverCorrect = new Array(cards.length).fill(false);
+            }
+          }
+
+          const idxRaw = localStorage.getItem(STORAGE_KEY_INDEX);
+          if (idxRaw !== null) {
+            let idx = parseInt(idxRaw, 10);
+            if (!Number.isNaN(idx)) currentPos = idx;
+          }
+
+          const autoRaw = localStorage.getItem(STORAGE_KEY_AUTO);
+          if (autoRaw === "1") autoShowAnswers = true;
+
+          if (cards.length) {
+            if (currentPos < 0) currentPos = 0;
+            if (currentPos >= cards.length) currentPos = cards.length - 1;
+            cardSection.style.display = "block";
+            emptyState.style.display = "none";
+            renderCard();
+          }
+        } catch (e) {}
+      }
+
+      function updateBadges() {
+        if (cards.length > 0) {
+          let extra = "";
+          if (testMode) {
+            extra = ` | Test: đúng ${totalCorrect}/${totalAnswered}`;
+          } else if (autoShowAnswers) {
+            extra = " | Đang ở chế độ tự hiện đáp án";
+          }
+          cardCountBadge.textContent = `${cards.length} thẻ`;
+          statusText.textContent = `Thẻ hiện tại: ${
+            getCurrentCardIndex() + 1
+          }/${cards.length}.${extra}`;
+        } else {
+          cardCountBadge.textContent = "Chưa có thẻ nào";
+          statusText.textContent =
+            "Chưa tải dữ liệu. Nhấn “Nhập / tải dữ liệu” để bắt đầu.";
+        }
+      }
+
+      function updateAutoButtonAndHint() {
+        if (autoShowAnswers) {
+          toggleAutoBtn.textContent = "👁️‍🗨️ Tự hiện đáp án: BẬT";
+          toggleAutoBtn.classList.add("btn-toggle-on");
+        } else {
+          toggleAutoBtn.textContent = "👁️‍🗨️ Tự hiện đáp án: TẮT";
+          toggleAutoBtn.classList.remove("btn-toggle-on");
+        }
+
+        if (testMode) {
+          hintText.textContent =
+            "📝 Chế độ làm bài test: chọn đáp án để kiểm tra đúng/sai. (Không dùng ↑/↓/Space để show đáp án)";
+        } else if (autoShowAnswers) {
+          hintText.textContent =
+            "📖 Đang ở chế độ học lướt: đáp án tự động hiển thị. Chỉ dùng ← / → để chuyển thẻ.";
+        } else {
+          hintText.textContent =
+            "💡 Click vào thẻ hoặc dùng ↑ / ↓ / Space để hiện / ẩn đáp án. Dùng ← / → để chuyển thẻ.";
+        }
+
+        updateBadges();
+      }
+
+      function updateTestButton() {
+        if (testMode) {
+          toggleTestBtn.textContent = "📝 Làm bài test: BẬT";
+          toggleTestBtn.classList.add("btn-test-on");
+          resetTestBtn.disabled = false;
+        } else {
+          toggleTestBtn.textContent = "📝 Làm bài test: TẮT";
+          toggleTestBtn.classList.remove("btn-test-on");
+          resetTestBtn.disabled = true;
+        }
+        updateAutoButtonAndHint();
+      }
+
+      function setupTestSession() {
+        if (!cards.length) return;
+        useShuffle = shuffleCheckbox.checked;
+        testOrder = Array.from({ length: cards.length }, (_, i) => i);
+        if (useShuffle) shuffleArray(testOrder);
+        perCardEverCorrect = new Array(cards.length).fill(false);
+        totalAnswered = 0;
+        totalCorrect = 0;
+        currentPos = 0;
+        hasAnsweredCurrent = false;
+      }
+
+      function renderCard() {
+        if (!cards.length) {
+          cardSection.style.display = "none";
+          emptyState.style.display = "block";
+          updateBadges();
+          return;
+        }
+
+        const cardIndex = getCurrentCardIndex();
+        const c = cards[cardIndex];
+        hasAnsweredCurrent = false;
+
+        cardQuestion.textContent = c.question || "Không có câu hỏi";
+
+        cardOptions.innerHTML = "";
+        if (Array.isArray(c.options)) {
+          c.options.forEach((o) => {
+            const li = document.createElement("li");
+            li.textContent = `${o.label}. ${o.text}`;
+            li.dataset.label = o.label;
+            li.classList.remove("opt-correct", "opt-incorrect");
+            cardOptions.appendChild(li);
+          });
+        }
+
+        const correct = (c.options || []).find((o) => o.label === c.answer);
+        const ansText = correct
+          ? `${correct.label}. ${correct.text}`
+          : c.answer;
+        answerText.textContent = ansText || "";
+
+        if (testMode) {
+          cardAnswer.style.display = "none";
+        } else {
+          cardAnswer.style.display = autoShowAnswers ? "block" : "none";
+          answerMessage.innerHTML =
+            "<strong>Đáp án đúng:</strong> " + (ansText || "");
+        }
+
+        indexInfo.textContent = `Thẻ ${
+          cardIndex + 1
+        } / ${cards.length}`;
+
+        prevBtn.disabled = currentPos === 0;
+        nextBtn.disabled = currentPos === cards.length - 1;
+
+        if (testMode && perCardEverCorrect[cardIndex]) {
+          perCardStatus.textContent = "✅ Câu này đã từng làm đúng.";
+        } else {
+          perCardStatus.textContent = "";
+        }
+
+        cardSection.style.display = "block";
+        emptyState.style.display = "none";
+        updateBadges();
+        saveIndexToStorage();
+      }
+
+      function goPrevCard() {
+        if (!cards.length) return;
+        if (currentPos > 0) {
+          currentPos--;
+          renderCard();
+        }
+      }
+
+      function goNextCard() {
+        if (!cards.length) return;
+        if (currentPos < cards.length - 1) {
+          currentPos++;
+          renderCard();
+        }
+      }
+
+      function toggleAnswerVisibility() {
+        if (testMode || autoShowAnswers) return;
+        if (
+          cardAnswer.style.display === "none" ||
+          cardAnswer.style.display === ""
+        ) {
+          cardAnswer.style.display = "block";
+        } else {
+          cardAnswer.style.display = "none";
+        }
+      }
+
+      // ---- YOUTUBE AUDIO ----
+      function extractYouTubeId(url) {
+        if (!url) return null;
+        const patterns = [
+          /youtu\.be\/([A-Za-z0-9_-]{6,})/,
+          /youtube\.com\/watch\?v=([A-Za-z0-9_-]{6,})/,
+          /youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/,
+        ];
+        for (const re of patterns) {
+          const m = url.match(re);
+          if (m && m[1]) return m[1];
+        }
+        return null;
+      }
+
+      function playYouTubeAudio(link) {
+        const id = extractYouTubeId(link);
+        if (!id) {
+          alert("Không nhận diện được video id từ link YouTube.");
+          return;
+        }
+        const src = `https://www.youtube.com/embed/${id}?autoplay=1&controls=0`;
+        ytContainer.innerHTML =
+          '<iframe src="' +
+          src +
+          '" allow="autoplay" allowfullscreen></iframe>';
+      }
+
+      function stopYouTubeAudio() {
+        ytContainer.innerHTML = "";
+      }
+
+      // ---- EVENTS: CARDS / TEST / AUTO ----
+      prevBtn.addEventListener("click", goPrevCard);
+      nextBtn.addEventListener("click", goNextCard);
+
+      card.addEventListener("click", function (e) {
+        if (e.target && e.target.closest("li")) return;
+        if (testMode || autoShowAnswers) return;
+        toggleAnswerVisibility();
+      });
+
+      cardOptions.addEventListener("click", function (e) {
+        const li = e.target.closest("li");
+        if (!li) return;
+        if (!testMode) return;
+        if (hasAnsweredCurrent) return;
+
+        const cardIndex = getCurrentCardIndex();
+        const c = cards[cardIndex];
+        const selectedLabel = li.dataset.label;
+        const correctLabel = c.answer;
+
+        [...cardOptions.querySelectorAll("li")].forEach((item) => {
+          item.classList.remove("opt-correct", "opt-incorrect");
+        });
+
+        [...cardOptions.querySelectorAll("li")].forEach((item) => {
+          const lbl = item.dataset.label;
+          if (lbl === correctLabel) item.classList.add("opt-correct");
+        });
+
+        if (selectedLabel !== correctLabel) {
+          li.classList.add("opt-incorrect");
+        }
+
+        const correctOpt = (c.options || []).find(
+          (o) => o.label === correctLabel
+        );
+        const ansText = correctOpt
+          ? `${correctOpt.label}. ${correctOpt.text}`
+          : correctLabel;
+
+        if (selectedLabel === correctLabel) {
+          answerMessage.innerHTML =
+            "✅ Đúng! Đáp án: " + (ansText || "");
+          perCardEverCorrect[cardIndex] = true;
+        } else {
+          answerMessage.innerHTML =
+            "❌ Sai. Đáp án đúng là: " + (ansText || "");
+        }
+
+        cardAnswer.style.display = "block";
+
+        hasAnsweredCurrent = true;
+        totalAnswered += 1;
+        if (selectedLabel === correctLabel) totalCorrect += 1;
+        updateBadges();
+
+        if (perCardEverCorrect[cardIndex]) {
+          perCardStatus.textContent = "✅ Câu này đã từng làm đúng.";
+        } else {
+          perCardStatus.textContent = "";
+        }
+      });
+
+      toggleAutoBtn.addEventListener("click", function () {
+        autoShowAnswers = !autoShowAnswers;
+        saveAutoToStorage();
+        updateAutoButtonAndHint();
+        if (!testMode) renderCard();
+      });
+
+      toggleTestBtn.addEventListener("click", function () {
+        if (!cards.length) return;
+
+        if (!testMode) {
+          // bật test
+          testMode = true;
+          setupTestSession();
+        } else {
+          // tắt test, quay lại view thường tại đúng card hiện tại
+          const cardIndex = getCurrentCardIndex();
+          testMode = false;
+          currentPos = cardIndex;
+        }
+        updateTestButton();
+        renderCard();
+      });
+
+      resetTestBtn.addEventListener("click", function () {
+        if (!testMode || !cards.length) return;
+        setupTestSession();
+        renderCard();
+      });
+
+      // ---- JUMP TO CARD ----
+      jumpBtn.addEventListener("click", function () {
+        if (!cards.length) return;
+        const value = parseInt(jumpInput.value, 10);
+        if (Number.isNaN(value)) return;
+        let n = value;
+        if (n < 1) n = 1;
+        if (n > cards.length) n = cards.length;
+        currentPos = n - 1;
+        renderCard();
+      });
+
+      jumpInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          jumpBtn.click();
+        }
+      });
+
+      // ---- DATA MODAL: PARSE / UPLOAD / CLEAR ----
+      parseBtn.addEventListener("click", function () {
+        const text = rawInput.value || "";
+        parseError.textContent = "";
+        const parsed = parseFromText(text);
+        if (!parsed.length) {
+          parseError.textContent =
+            "❌ Không parse được thẻ nào. Kiểm tra lại format.";
+          return;
+        }
+        cards = parsed;
+        currentPos = 0;
+        perCardEverCorrect = new Array(cards.length).fill(false);
+        totalAnswered = 0;
+        totalCorrect = 0;
+        testMode = false;
+        updateTestButton();
+
+        cardSection.style.display = "block";
+        emptyState.style.display = "none";
+        saveDataToStorage();
+        renderCard();
+        dataModal.hide();
+      });
+
+      uploadBtn.addEventListener("click", function () {
+        const file = fileInput.files && fileInput.files[0];
+        parseError.textContent = "";
+        if (!file) {
+          parseError.textContent = "❌ Bạn chưa chọn file.";
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const content = e.target.result;
+            let parsed;
+            if (file.name.toLowerCase().endsWith(".json")) {
+              parsed = JSON.parse(content);
+              if (!Array.isArray(parsed)) {
+                throw new Error("JSON phải là một mảng.");
+              }
+            } else {
+              parsed = parseFromText(content);
+            }
+
+            if (!parsed.length) {
+              throw new Error("Không có thẻ hợp lệ trong file.");
+            }
+
+            cards = parsed;
+            currentPos = 0;
+            perCardEverCorrect = new Array(cards.length).fill(false);
+            totalAnswered = 0;
+            totalCorrect = 0;
+            testMode = false;
+            updateTestButton();
+
+            saveDataToStorage();
+            renderCard();
+            dataModal.hide();
+          } catch (err) {
+            console.error(err);
+            parseError.textContent =
+              "❌ Lỗi đọc file. Kiểm tra lại format JSON hoặc TXT.";
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      });
+
+      clearStorageBtn.addEventListener("click", function () {
+        if (
+          !confirm(
+            "Bạn có chắc muốn xoá bộ thẻ và tiến độ đã lưu không?"
+          )
+        )
+          return;
+        clearStorage();
+        cards = [];
+        currentPos = 0;
+        perCardEverCorrect = [];
+        totalAnswered = 0;
+        totalCorrect = 0;
+        testMode = false;
+        updateTestButton();
+        cardSection.style.display = "none";
+        emptyState.style.display = "block";
+        updateBadges();
+        parseError.textContent = "Đã xoá dữ liệu trong trình duyệt.";
+      });
+
+      // ---- YOUTUBE BUTTONS ----
+      ytPlayBtn.addEventListener("click", function () {
+        const link = ytInput.value.trim();
+        if (!link) {
+          alert("Hãy dán link YouTube trước.");
+          return;
+        }
+        playYouTubeAudio(link);
+      });
+
+      ytStopBtn.addEventListener("click", function () {
+        stopYouTubeAudio();
+      });
+
+      // ---- KEYBOARD SHORTCUTS ----
+      document.addEventListener("keydown", function (e) {
+        // Không bắt phím khi modal đang mở
+        if (document.querySelector(".modal.show")) return;
+
+        const tag = (e.target.tagName || "").toUpperCase();
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          goPrevCard();
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          goNextCard();
+        } else if (
+          e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === " "
+        ) {
+          if (autoShowAnswers || testMode) return; // chỉ khi không auto, không test
+          e.preventDefault();
+          toggleAnswerVisibility();
+        }
+      });
+
+      // ---- INIT ----
+      loadStateFromStorage();
+      updateTestButton();
+      updateAutoButtonAndHint();
+      updateBadges();
+    });
+  </script>
+</body>
+</html>
