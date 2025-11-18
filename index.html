@@ -121,6 +121,17 @@
       margin-top: 6px;
     }
 
+    .btn-toggle-on {
+      background-color: #198754;
+      color: #fff;
+      border-color: #198754;
+    }
+    .btn-test-on {
+      background-color: #dc3545;
+      color: #fff;
+      border-color: #dc3545;
+    }
+
     @media (max-width: 640px) {
       body {
         padding: 12px 0 32px;
@@ -351,8 +362,8 @@
             <h6>1️⃣ Nhập dữ liệu thủ công</h6>
             <p class="small-note mb-2">
               Dán nội dung từ Word/TXT, format: câu hỏi + các dòng
-              <code>a.</code>, <code>b.</code>... và dòng cuối cùng là chữ cái
-              đáp án (A/B/C/D).
+              <code>a.</code>, <code>b.</code>... và dòng cuối cùng là
+              <strong>một hoặc nhiều chữ cái A/B/C/D (vd: A, AC)</strong>.
             </p>
             <textarea
               id="rawInput"
@@ -365,7 +376,7 @@ b. Đáp án 2
 c. Đáp án 3
 d. Đáp án 4
 
-b"
+ac   (A và C cùng đúng)"
             ></textarea>
             <button
               id="parseBtn"
@@ -381,11 +392,14 @@ b"
           <div class="mb-3">
             <h6>2️⃣ Hoặc upload file (.json hoặc .txt)</h6>
             <p class="small-note mb-2">
-              JSON phải có dạng:
-              <code
-                >[{"{"}"question": "...","options":[{"{"}"label":"A","text":"..."
-                {"}"}], "answer":"B"{"}"}]</code
-              >
+              JSON mới nên dùng dạng:
+              <code>
+                [{"{"}"question":"...","options":[{"{"}"label":"A","text":"..."}],
+                "answers":["A","C"]{"}"}]
+              </code>
+              <br />
+              Vẫn hỗ trợ dạng cũ:
+              <code> "answer":"B" </code>
             </p>
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <input
@@ -497,6 +511,63 @@ b"
       const STORAGE_KEY_AUTO = "flashcards_auto_show";
 
       // ---- HELPERS ----
+      function normalizeCards(arr) {
+        if (!Array.isArray(arr)) return [];
+        for (const c of arr) {
+          if (!c || typeof c !== "object") continue;
+          let answers = [];
+          if (Array.isArray(c.answers) && c.answers.length) {
+            answers = c.answers
+              .map((x) => String(x).toUpperCase())
+              .filter((ch) => /[A-D]/.test(ch));
+          } else if (typeof c.answer === "string") {
+            const ms = c.answer.toUpperCase().match(/[A-D]/g);
+            if (ms) answers = Array.from(new Set(ms));
+          }
+          if (!answers.length) {
+            // nếu vẫn rỗng mà options có label thì thử auto lấy 1 label
+            if (Array.isArray(c.options)) {
+              const first = c.options[0];
+              if (first && first.label) {
+                answers = [String(first.label).toUpperCase()];
+              }
+            }
+          }
+          c.answers = answers;
+          // giữ lại answer đầu cho tương thích nếu nơi khác dùng
+          c.answer = answers[0] || c.answer || null;
+        }
+        return arr;
+      }
+
+      function getAnswers(card) {
+        if (!card) return [];
+        if (Array.isArray(card.answers) && card.answers.length) {
+          return card.answers;
+        }
+        if (typeof card.answer === "string") {
+          const ms = card.answer.toUpperCase().match(/[A-D]/g);
+          if (ms) return Array.from(new Set(ms));
+        }
+        return [];
+      }
+
+      function buildAnswerText(card) {
+        const answers = getAnswers(card);
+        if (!answers.length) return "";
+        const opts = Array.isArray(card.options) ? card.options : [];
+        const parts = [];
+        for (const lbl of answers) {
+          const opt = opts.find((o) => o.label === lbl);
+          if (opt) {
+            parts.push(`${opt.label}. ${opt.text}`);
+          } else {
+            parts.push(lbl);
+          }
+        }
+        return parts.join("; ");
+      }
+
       function parseFromText(text) {
         const blocks = text.trim().split(/\n\s*\n+/);
         const result = [];
@@ -509,9 +580,9 @@ b"
           if (lines.length < 3) continue;
 
           const ansLine = lines[lines.length - 1].trim();
-          const ansMatch = ansLine.match(/^([A-Da-d])$/);
-          if (!ansMatch) continue;
-          const answerLetter = ansMatch[1].toUpperCase();
+          const letters = (ansLine.toUpperCase().match(/[A-D]/g) || []);
+          const uniqueLetters = Array.from(new Set(letters));
+          if (!uniqueLetters.length) continue;
 
           let optStart = null;
           for (let i = 0; i < lines.length; i++) {
@@ -534,9 +605,13 @@ b"
           }
           if (!options.length) continue;
 
-          result.push({ question, options, answer: answerLetter });
+          result.push({
+            question,
+            options,
+            answers: uniqueLetters,
+          });
         }
-        return result;
+        return normalizeCards(result);
       }
 
       function shuffleArray(arr) {
@@ -592,7 +667,7 @@ b"
         try {
           const raw = localStorage.getItem(STORAGE_KEY_DATA);
           if (raw) {
-            const storedCards = JSON.parse(raw);
+            const storedCards = normalizeCards(JSON.parse(raw));
             if (Array.isArray(storedCards) && storedCards.length) {
               cards = storedCards;
               perCardEverCorrect = new Array(cards.length).fill(false);
@@ -710,10 +785,7 @@ b"
           });
         }
 
-        const correct = (c.options || []).find((o) => o.label === c.answer);
-        const ansText = correct
-          ? `${correct.label}. ${correct.text}`
-          : c.answer;
+        const ansText = buildAnswerText(c);
         answerText.textContent = ansText || "";
 
         if (testMode) {
@@ -822,31 +894,29 @@ b"
         const cardIndex = getCurrentCardIndex();
         const c = cards[cardIndex];
         const selectedLabel = li.dataset.label;
-        const correctLabel = c.answer;
+        const correctLabels = getAnswers(c);
 
+        // Clear cũ
         [...cardOptions.querySelectorAll("li")].forEach((item) => {
           item.classList.remove("opt-correct", "opt-incorrect");
         });
 
+        // Đánh dấu tất cả đáp án đúng
         [...cardOptions.querySelectorAll("li")].forEach((item) => {
           const lbl = item.dataset.label;
-          if (lbl === correctLabel) item.classList.add("opt-correct");
+          if (correctLabels.includes(lbl)) item.classList.add("opt-correct");
         });
 
-        if (selectedLabel !== correctLabel) {
+        // Nếu chọn sai thì tô đỏ
+        const isCorrect = correctLabels.includes(selectedLabel);
+        if (!isCorrect) {
           li.classList.add("opt-incorrect");
         }
 
-        const correctOpt = (c.options || []).find(
-          (o) => o.label === correctLabel
-        );
-        const ansText = correctOpt
-          ? `${correctOpt.label}. ${correctOpt.text}`
-          : correctLabel;
+        const ansText = buildAnswerText(c);
 
-        if (selectedLabel === correctLabel) {
-          answerMessage.innerHTML =
-            "✅ Đúng! Đáp án: " + (ansText || "");
+        if (isCorrect) {
+          answerMessage.innerHTML = "✅ Đúng! Đáp án: " + (ansText || "");
           perCardEverCorrect[cardIndex] = true;
         } else {
           answerMessage.innerHTML =
@@ -857,7 +927,7 @@ b"
 
         hasAnsweredCurrent = true;
         totalAnswered += 1;
-        if (selectedLabel === correctLabel) totalCorrect += 1;
+        if (isCorrect) totalCorrect += 1;
         updateBadges();
 
         if (perCardEverCorrect[cardIndex]) {
@@ -955,7 +1025,7 @@ b"
             const content = e.target.result;
             let parsed;
             if (file.name.toLowerCase().endsWith(".json")) {
-              parsed = JSON.parse(content);
+              parsed = normalizeCards(JSON.parse(content));
               if (!Array.isArray(parsed)) {
                 throw new Error("JSON phải là một mảng.");
               }
